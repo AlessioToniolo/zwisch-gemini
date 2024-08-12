@@ -1,9 +1,8 @@
 const functions = require('firebase-functions');
 const admin = require('firebase-admin');
 admin.initializeApp();
-const { runMatchingOnNewEntry } = require('./rideMatching');
-exports.sendPushNotification = functions.db
 
+exports.sendPushNotification = functions.firestore
   .document('rides/{rideId}')
   .onUpdate(async (change, context) => {
     const newValue = change.after.data();
@@ -18,10 +17,8 @@ exports.sendPushNotification = functions.db
       const driverId = newValue.driverId;
 
       // Get the FCM tokens for both users
-      const riderDoc = await admin.db
-        ().collection('users').doc(riderId).get();
-      const driverDoc = await admin.db
-        ().collection('users').doc(driverId).get();
+      const riderDoc = await admin.firestore().collection('users').doc(riderId).get();
+      const driverDoc = await admin.firestore().collection('users').doc(driverId).get();
 
       const riderToken = riderDoc.data().fcmToken;
       const driverToken = driverDoc.data().fcmToken;
@@ -56,17 +53,4 @@ exports.sendPushNotification = functions.db
         await admin.messaging().send(message);
       }
     }
-  });
-exports.triggerRideMatching = functions.firestore
-  .document('rideRequests/{requestId}')
-  .onCreate(async (snap, context) => {
-    // Run ride matching when a new ride request is created
-    await runMatchingOnNewEntry();
-  });
-
-exports.triggerRideMatchingOnOffer = functions.firestore
-  .document('driverAvailability/{offerId}')
-  .onCreate(async (snap, context) => {
-    // Run ride matching when a new driver availability is created
-    await runMatchingOnNewEntry();
   });
